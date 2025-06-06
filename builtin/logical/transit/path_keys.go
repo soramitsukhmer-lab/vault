@@ -18,7 +18,6 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/keysutil"
 	"github.com/hashicorp/vault/sdk/logical"
-	ed25519sha3sum256 "github.com/soramitsukhmer-lab/go-ed25519sha3/ed25519sha3sum256"
 	ed25519sha3sum512 "github.com/soramitsukhmer-lab/go-ed25519sha3/ed25519sha3sum512"
 	"golang.org/x/crypto/ed25519"
 )
@@ -233,8 +232,6 @@ func (b *backend) pathPolicyWrite(ctx context.Context, req *logical.Request, d *
 		polReq.KeyType = keysutil.KeyType_ECDSA_P521
 	case "ed25519":
 		polReq.KeyType = keysutil.KeyType_ED25519
-	case "ed25519-sha3-256":
-		polReq.KeyType = keysutil.KeyType_ED25519_SHA3_256
 	case "ed25519-sha3-512":
 		polReq.KeyType = keysutil.KeyType_ED25519_SHA3_512
 	case "rsa-2048":
@@ -436,7 +433,7 @@ func (b *backend) formatKeyPolicy(p *keysutil.Policy, context []byte) (*logical.
 		}
 		resp.Data["keys"] = retKeys
 
-	case keysutil.KeyType_ECDSA_P256, keysutil.KeyType_ECDSA_P384, keysutil.KeyType_ECDSA_P521, keysutil.KeyType_ED25519, keysutil.KeyType_ED25519_SHA3_256, keysutil.KeyType_ED25519_SHA3_512, keysutil.KeyType_RSA2048, keysutil.KeyType_RSA3072, keysutil.KeyType_RSA4096, keysutil.KeyType_ML_DSA, keysutil.KeyType_HYBRID:
+	case keysutil.KeyType_ECDSA_P256, keysutil.KeyType_ECDSA_P384, keysutil.KeyType_ECDSA_P521, keysutil.KeyType_ED25519, keysutil.KeyType_ED25519_SHA3_512, keysutil.KeyType_RSA2048, keysutil.KeyType_RSA3072, keysutil.KeyType_RSA4096, keysutil.KeyType_ML_DSA, keysutil.KeyType_HYBRID:
 		retKeys := map[string]map[string]interface{}{}
 		for k, v := range p.Keys {
 			key := asymKey{
@@ -484,24 +481,6 @@ func (b *backend) formatKeyPolicy(p *keysutil.Policy, context []byte) (*logical.
 					}
 				}
 				key.Name = "ed25519"
-			case keysutil.KeyType_ED25519_SHA3_256:
-				if p.Derived {
-					if len(context) == 0 {
-						key.PublicKey = ""
-					} else {
-						ver, err := strconv.Atoi(k)
-						if err != nil {
-							return nil, fmt.Errorf("invalid version %q: %w", k, err)
-						}
-						derived, err := p.GetKey(context, ver, 32)
-						if err != nil {
-							return nil, fmt.Errorf("failed to derive key to return public component: %w", err)
-						}
-						pubKey := ed25519sha3sum256.PrivateKey(derived).Public().(ed25519sha3sum256.PublicKey)
-						key.PublicKey = base64.StdEncoding.EncodeToString(pubKey)
-					}
-				}
-				key.Name = "ed25519-sha3-256"
 			case keysutil.KeyType_ED25519_SHA3_512:
 				if p.Derived {
 					if len(context) == 0 {
@@ -584,8 +563,6 @@ func getHybridKeyConfig(pqcKeyType, parameterSet, ecKeyType string) (keysutil.Hy
 		config.ECKeyType = keysutil.KeyType_ECDSA_P521
 	case "ed25519":
 		config.ECKeyType = keysutil.KeyType_ED25519
-	case "ed25519-sha3-256":
-		config.ECKeyType = keysutil.KeyType_ED25519_SHA3_256
 	case "ed25519-sha3-512":
 		config.ECKeyType = keysutil.KeyType_ED25519_SHA3_512
 	default:
