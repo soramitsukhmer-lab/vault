@@ -10,7 +10,9 @@ module github.com/hashicorp/vault
 // semantic related to Go module handling), this comment should be updated to explain that.
 //
 // Whenever this value gets updated, sdk/go.mod should be updated to the same value.
-go 1.23.3
+go 1.23.8
+
+toolchain go1.24.3
 
 replace github.com/hashicorp/vault/api => ./api
 
@@ -57,6 +59,7 @@ require (
 	github.com/cockroachdb/cockroach-go/v2 v2.3.8
 	github.com/coder/websocket v1.8.12
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
+	github.com/crpt/go-ed25519-sha3-512 v1.1.2
 	github.com/denisenkom/go-mssqldb v0.12.3
 	github.com/docker/docker v27.2.1+incompatible
 	github.com/duosecurity/duo_api_golang v0.0.0-20190308151101-6c680f768e74
@@ -218,14 +221,14 @@ require (
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/atomic v1.11.0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/crypto v0.35.0
+	golang.org/x/crypto v0.38.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 	golang.org/x/net v0.35.0
 	golang.org/x/oauth2 v0.27.0
-	golang.org/x/sync v0.11.0
-	golang.org/x/sys v0.30.0
-	golang.org/x/term v0.29.0
-	golang.org/x/text v0.22.0
+	golang.org/x/sync v0.14.0
+	golang.org/x/sys v0.33.0
+	golang.org/x/term v0.32.0
+	golang.org/x/text v0.25.0
 	golang.org/x/tools v0.29.0
 	google.golang.org/api v0.221.0
 	google.golang.org/grpc v1.70.0
@@ -260,6 +263,7 @@ require (
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
+	github.com/soramitsukhmer-lab/go-ed25519sha3 v0.0.0-20250605160512-c5506d9c59e8 // indirect
 	github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
