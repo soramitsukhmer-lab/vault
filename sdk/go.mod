@@ -48,12 +48,13 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/ryanuber/go-glob v1.0.0
+	github.com/soramitsukhmer-lab/go-ed25519sha3 v0.0.0-20250605160512-c5506d9c59e8
 	github.com/stretchr/testify v1.10.0
 	github.com/tink-crypto/tink-go/v2 v2.2.0
 	go.uber.org/atomic v1.11.0
-	golang.org/x/crypto v0.36.0
+	golang.org/x/crypto v0.38.0
 	golang.org/x/net v0.38.0
-	golang.org/x/text v0.23.0
+	golang.org/x/text v0.25.0
 	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.5
 )
@@ -61,6 +62,7 @@ require (
 require (
 	cloud.google.com/go/auth v0.14.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.7 // indirect
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
@@ -139,8 +141,8 @@ require (
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/term v0.30.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
 	google.golang.org/api v0.221.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250207221924-e9438ea467c6 // indirect
