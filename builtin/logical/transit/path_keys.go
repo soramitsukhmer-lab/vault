@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/keysutil"
 	"github.com/hashicorp/vault/sdk/logical"
-	ed25519sha3sum512 "github.com/soramitsukhmer-lab/go-ed25519sha3/ed25519sha3sum512"
+	"github.com/soramitsukhmer-lab/go-ed25519sha3/ed25519sha3"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -506,7 +506,7 @@ func (b *backend) formatKeyPolicy(p *keysutil.Policy, context []byte) (*logical.
 						if err != nil {
 							return nil, fmt.Errorf("failed to derive key to return public component: %w", err)
 						}
-						pubKey := ed25519sha3sum512.PrivateKey(derived).Public().(ed25519sha3sum512.PublicKey)
+						pubKey := ed25519sha3.PrivateKey(derived).Public().(ed25519sha3.PublicKey)
 						key.PublicKey = base64.StdEncoding.EncodeToString(pubKey)
 					}
 				}

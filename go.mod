@@ -206,7 +206,7 @@ require (
 	github.com/sasha-s/go-deadlock v0.3.5
 	github.com/sethvargo/go-limiter v0.7.1
 	github.com/shirou/gopsutil/v3 v3.22.6
-	github.com/soramitsukhmer-lab/go-ed25519sha3 v0.0.0-20250605160512-c5506d9c59e8
+	github.com/soramitsukhmer-lab/go-ed25519sha3 v0.0.0-20250608130125-3aadb34277ed
 	github.com/stretchr/testify v1.10.0
 	github.com/tink-crypto/tink-go/v2 v2.2.0
 	go.etcd.io/bbolt v1.4.0-beta.0

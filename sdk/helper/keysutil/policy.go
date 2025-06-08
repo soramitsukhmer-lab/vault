@@ -40,12 +40,11 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	"github.com/hashicorp/vault/sdk/helper/kdf"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/soramitsukhmer-lab/go-ed25519sha3/ed25519sha3"
 	"github.com/tink-crypto/tink-go/v2/kwp/subtle"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/hkdf"
-
-	ed25519sha3sum512 "github.com/soramitsukhmer-lab/go-ed25519sha3/ed25519sha3sum512"
 )
 
 // Careful with iota; don't put anything before it in this const block because
@@ -988,7 +987,7 @@ func (p *Policy) DeriveKey(context, salt []byte, ver int, numBytes int) ([]byte,
 		case KeyType_ED25519_SHA3_512:
 			// We use the limited reader containing the derived bytes as the
 			// "random" input to the generation function
-			_, pri, err := ed25519sha3sum512.GenerateKey(limReader)
+			_, pri, err := ed25519sha3.GenerateKey(limReader)
 			if err != nil {
 				return nil, errutil.InternalError{Err: fmt.Sprintf("error generating derived key: %v", err)}
 			}
@@ -1375,7 +1374,7 @@ func (p *Policy) signWithEd25519(ver int, input []byte, context []byte, options 
 }
 
 func (p *Policy) signWithed25519sha3sum512(ver int, input []byte, context []byte, options *SigningOptions, keyParams KeyEntry) ([]byte, []byte, error) {
-	var key ed25519sha3sum512.PrivateKey
+	var key ed25519sha3.PrivateKey
 	var pubKey []byte
 	if p.Derived {
 		// Derive the key that should be used
@@ -1386,7 +1385,7 @@ func (p *Policy) signWithed25519sha3sum512(ver int, input []byte, context []byte
 		}
 		pubKey = key.Public().(ed25519.PublicKey)
 	} else {
-		key = ed25519sha3sum512.PrivateKey(keyParams.Key)
+		key = ed25519sha3.PrivateKey(keyParams.Key)
 	}
 
 	opts, err := genEd25519Options(options.HashAlgorithm, options.SigContext)
@@ -1671,14 +1670,14 @@ func (p *Policy) verifyEd25519WithPublicKey(input []byte, sigBytes []byte, pub e
 }
 
 func (p *Policy) verifyEd25519Sha3Sum512(ver int, input []byte, context []byte, sigBytes []byte) (bool, error) {
-	var pub ed25519sha3sum512.PublicKey
+	var pub ed25519sha3.PublicKey
 	if p.Derived {
 		// Derive the key that should be used
 		key, err := p.GetKey(context, ver, 32)
 		if err != nil {
 			return false, errutil.InternalError{Err: fmt.Sprintf("error deriving key: %v", err)}
 		}
-		pub = ed25519sha3sum512.PrivateKey(key).Public().(ed25519sha3sum512.PublicKey)
+		pub = ed25519sha3.PrivateKey(key).Public().(ed25519sha3.PublicKey)
 	} else {
 		keyEntry, err := p.safeGetKeyEntry(ver)
 		if err != nil {
@@ -1690,17 +1689,17 @@ func (p *Policy) verifyEd25519Sha3Sum512(ver int, input []byte, context []byte, 
 			return false, err
 		}
 
-		pub = ed25519sha3sum512.PublicKey(raw)
+		pub = ed25519sha3.PublicKey(raw)
 	}
 
 	return p.verifyEd25519Sha3Sum512WithPublicKey(input, sigBytes, pub)
 }
 
-func (p *Policy) verifyEd25519Sha3Sum512WithPublicKey(input []byte, sigBytes []byte, pub ed25519sha3sum512.PublicKey) (bool, error) {
+func (p *Policy) verifyEd25519Sha3Sum512WithPublicKey(input []byte, sigBytes []byte, pub ed25519sha3.PublicKey) (bool, error) {
 	if pub == nil {
 		return false, errutil.InternalError{Err: "no Ed25519 public key on policy"}
 	}
-	if ok := ed25519sha3sum512.Verify(pub, input, sigBytes); !ok {
+	if ok := ed25519sha3.Verify(pub, input, sigBytes); !ok {
 		// We drop the error, just report back that we failed signature verification
 		return false, nil
 	}
@@ -1986,7 +1985,7 @@ func generateed25519sha3sum512Key(randReader io.Reader, private *[]byte, public 
 	// underlying public key is never returned (which is probably good, because
 	// doing so would leak half of our HKDF key...), but means we cannot import
 	// derived-enabled Ed25519 public key components.
-	pub, pri, err := ed25519sha3sum512.GenerateKey(randReader)
+	pub, pri, err := ed25519sha3.GenerateKey(randReader)
 	if err != nil {
 		return err
 	}
