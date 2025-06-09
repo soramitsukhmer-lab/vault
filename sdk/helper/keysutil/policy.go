@@ -38,6 +38,7 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/jsonutil"
 	"github.com/hashicorp/vault/sdk/helper/kdf"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/soramitsukhmer-lab/go-ed25519sha3/ed25519sha3"
 	"github.com/tink-crypto/tink-go/v2/kwp/subtle"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/ed25519"
@@ -59,6 +60,7 @@ const (
 	KeyType_AES256_GCM96 = iota
 	KeyType_ECDSA_P256
 	KeyType_ED25519
+	KeyType_ED25519_SHA3_512
 	KeyType_RSA2048
 	KeyType_RSA4096
 	KeyType_ChaCha20_Poly1305
@@ -141,7 +143,7 @@ func (kt KeyType) DecryptionSupported() bool {
 
 func (kt KeyType) SigningSupported() bool {
 	switch kt {
-	case KeyType_ECDSA_P256, KeyType_ECDSA_P384, KeyType_ECDSA_P521, KeyType_ED25519, KeyType_RSA2048, KeyType_RSA3072, KeyType_RSA4096, KeyType_MANAGED_KEY:
+	case KeyType_ECDSA_P256, KeyType_ECDSA_P384, KeyType_ECDSA_P521, KeyType_ED25519, KeyType_ED25519_SHA3_512, KeyType_RSA2048, KeyType_RSA3072, KeyType_RSA4096, KeyType_MANAGED_KEY:
 		return true
 	}
 	return false
@@ -157,7 +159,7 @@ func (kt KeyType) HashSignatureInput() bool {
 
 func (kt KeyType) DerivationSupported() bool {
 	switch kt {
-	case KeyType_AES128_GCM96, KeyType_AES256_GCM96, KeyType_ChaCha20_Poly1305, KeyType_ED25519:
+	case KeyType_AES128_GCM96, KeyType_AES256_GCM96, KeyType_ChaCha20_Poly1305, KeyType_ED25519, KeyType_ED25519_SHA3_512:
 		return true
 	}
 	return false
@@ -193,7 +195,7 @@ func (kt KeyType) HMACSupported() bool {
 
 func (kt KeyType) ImportPublicKeySupported() bool {
 	switch kt {
-	case KeyType_RSA2048, KeyType_RSA3072, KeyType_RSA4096, KeyType_ECDSA_P256, KeyType_ECDSA_P384, KeyType_ECDSA_P521, KeyType_ED25519:
+	case KeyType_RSA2048, KeyType_RSA3072, KeyType_RSA4096, KeyType_ECDSA_P256, KeyType_ECDSA_P384, KeyType_ECDSA_P521, KeyType_ED25519, KeyType_ED25519_SHA3_512:
 		return true
 	}
 	return false
@@ -215,6 +217,8 @@ func (kt KeyType) String() string {
 		return "ecdsa-p521"
 	case KeyType_ED25519:
 		return "ed25519"
+	case KeyType_ED25519_SHA3_512:
+		return "ed25519-sha3-512"
 	case KeyType_RSA2048:
 		return "rsa-2048"
 	case KeyType_RSA3072:
@@ -895,6 +899,15 @@ func (p *Policy) DeriveKey(context, salt []byte, ver int, numBytes int) ([]byte,
 			}
 			return pri, nil
 
+		case KeyType_ED25519_SHA3_512:
+			// We use the limited reader containing the derived bytes as the
+			// "random" input to the generation function
+			_, pri, err := ed25519sha3.GenerateKey(limReader)
+			if err != nil {
+				return nil, errutil.InternalError{Err: fmt.Sprintf("error generating derived key: %v", err)}
+			}
+			return pri, nil
+
 		default:
 			return nil, errutil.InternalError{Err: "unsupported key type for derivation"}
 		}
@@ -1265,6 +1278,28 @@ func (p *Policy) SignWithOptions(ver int, context, input []byte, options *Signin
 			return nil, err
 		}
 
+	case KeyType_ED25519_SHA3_512:
+		var key ed25519sha3.PrivateKey
+
+		if p.Derived {
+			// Derive the key that should be used
+			var err error
+			key, err = p.GetKey(context, ver, 32)
+			if err != nil {
+				return nil, errutil.InternalError{Err: fmt.Sprintf("error deriving key: %v", err)}
+			}
+			pubKey = key.Public().(ed25519sha3.PublicKey)
+		} else {
+			key = ed25519sha3.PrivateKey(keyParams.Key)
+		}
+
+		// Per docs, do not pre-hash ed25519; it does two passes and performs
+		// its own hashing
+		sig, err = key.Sign(rand.Reader, input, crypto.Hash(0))
+		if err != nil {
+			return nil, err
+		}
+
 	case KeyType_RSA2048, KeyType_RSA3072, KeyType_RSA4096:
 		key := keyParams.RSAKey
 
@@ -1458,6 +1493,32 @@ func (p *Policy) VerifySignatureWithOptions(context, input []byte, sig string, o
 
 		return ed25519.Verify(pub, input, sigBytes), nil
 
+	case KeyType_ED25519_SHA3_512:
+		var pub ed25519sha3.PublicKey
+
+		if p.Derived {
+			// Derive the key that should be used
+			key, err := p.GetKey(context, ver, 32)
+			if err != nil {
+				return false, errutil.InternalError{Err: fmt.Sprintf("error deriving key: %v", err)}
+			}
+			pub = ed25519sha3.PrivateKey(key).Public().(ed25519sha3.PublicKey)
+		} else {
+			keyEntry, err := p.safeGetKeyEntry(ver)
+			if err != nil {
+				return false, err
+			}
+
+			raw, err := base64.StdEncoding.DecodeString(keyEntry.FormattedPublicKey)
+			if err != nil {
+				return false, err
+			}
+
+			pub = ed25519sha3.PublicKey(raw)
+		}
+
+		return ed25519sha3.Verify(pub, input, sigBytes), nil
+
 	case KeyType_RSA2048, KeyType_RSA3072, KeyType_RSA4096:
 		keyEntry, err := p.safeGetKeyEntry(ver)
 		if err != nil {
@@ -1541,6 +1602,10 @@ func (p *Policy) ImportPublicOrPrivate(ctx context.Context, storage logical.Stor
 
 	if p.Type == KeyType_ED25519 && p.Derived && !isPrivateKey {
 		return fmt.Errorf("unable to import only public key for derived Ed25519 key: imported key should not be an Ed25519 key pair but is instead an HKDF key")
+	}
+
+	if p.Type == KeyType_ED25519_SHA3_512 && p.Derived && !isPrivateKey {
+		return fmt.Errorf("unable to import only public key for derived Ed25519-sha3-512 key: imported key should not be an Ed25519-sha3-512 key pair but is instead an HKDF key")
 	}
 
 	if ((p.Type == KeyType_AES128_GCM96 || p.Type == KeyType_AES128_CMAC) && len(key) != 16) ||
@@ -1734,6 +1799,20 @@ func (p *Policy) RotateInMemory(randReader io.Reader) (retErr error) {
 		// doing so would leak half of our HKDF key...), but means we cannot import
 		// derived-enabled Ed25519 public key components.
 		pub, pri, err := ed25519.GenerateKey(randReader)
+		if err != nil {
+			return err
+		}
+		entry.Key = pri
+		entry.FormattedPublicKey = base64.StdEncoding.EncodeToString(pub)
+	case KeyType_ED25519_SHA3_512:
+		// Go uses a 64-byte private key for Ed25519 keys (private+public, each
+		// 32-bytes long). When we do Key derivation, we still generate a 32-byte
+		// random value (and compute the corresponding Ed25519 public key), but
+		// use this entire 64-byte key as if it was an HKDF key. The corresponding
+		// underlying public key is never returned (which is probably good, because
+		// doing so would leak half of our HKDF key...), but means we cannot import
+		// derived-enabled Ed25519 public key components.
+		pub, pri, err := ed25519sha3.GenerateKey(randReader)
 		if err != nil {
 			return err
 		}
@@ -2346,6 +2425,20 @@ func (ke *KeyEntry) parseFromKey(PolKeyType KeyType, parsedKey any) error {
 			publicKey := parsedKey.(ed25519.PublicKey)
 			ke.FormattedPublicKey = base64.StdEncoding.EncodeToString(publicKey)
 		}
+	case ed25519sha3.PrivateKey, ed25519sha3.PublicKey:
+		if PolKeyType != KeyType_ED25519_SHA3_512 {
+			return fmt.Errorf("invalid key type: expected %s, got %T", PolKeyType, parsedKey)
+		}
+
+		privateKey, ok := parsedKey.(ed25519sha3.PrivateKey)
+		if ok {
+			ke.Key = privateKey
+			publicKey := privateKey.Public().(ed25519sha3.PublicKey)
+			ke.FormattedPublicKey = base64.StdEncoding.EncodeToString(publicKey)
+		} else {
+			publicKey := parsedKey.(ed25519sha3.PublicKey)
+			ke.FormattedPublicKey = base64.StdEncoding.EncodeToString(publicKey)
+		}
 	case *rsa.PrivateKey, *rsa.PublicKey:
 		if PolKeyType != KeyType_RSA2048 && PolKeyType != KeyType_RSA3072 && PolKeyType != KeyType_RSA4096 {
 			return fmt.Errorf("invalid key type: expected %s, got %T", PolKeyType, parsedKey)
@@ -2509,6 +2602,12 @@ func (p *Policy) CreateCsr(keyVersion int, csrTemplate *x509.CertificateRequest)
 		}
 		key = ed25519.PrivateKey(keyEntry.Key)
 
+	case KeyType_ED25519_SHA3_512:
+		if p.Derived {
+			return nil, errutil.UserError{Err: "operation not supported on keys with derivation enabled"}
+		}
+		key = ed25519sha3.PrivateKey(keyEntry.Key)
+
 	case KeyType_RSA2048, KeyType_RSA3072, KeyType_RSA4096:
 		key = keyEntry.RSAKey
 
@@ -2539,7 +2638,7 @@ func (p *Policy) ValidateLeafCertKeyMatch(keyVersion int, certPublicKeyAlgorithm
 		if certPublicKeyAlgorithm == x509.ECDSA {
 			keyTypeMatches = true
 		}
-	case KeyType_ED25519:
+	case KeyType_ED25519, KeyType_ED25519_SHA3_512:
 		if certPublicKeyAlgorithm == x509.Ed25519 {
 			keyTypeMatches = true
 		}

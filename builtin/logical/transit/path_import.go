@@ -207,6 +207,8 @@ func (b *backend) pathImportWrite(ctx context.Context, req *logical.Request, d *
 		polReq.KeyType = keysutil.KeyType_ECDSA_P521
 	case "ed25519":
 		polReq.KeyType = keysutil.KeyType_ED25519
+	case "ed25519-sha3-512":
+		polReq.KeyType = keysutil.KeyType_ED25519_SHA3_512
 	case "rsa-2048":
 		polReq.KeyType = keysutil.KeyType_RSA2048
 	case "rsa-3072":

@@ -1,6 +1,8 @@
 module github.com/hashicorp/vault/sdk
 
-go 1.21
+go 1.23.8
+
+toolchain go1.23.9
 
 require (
 	cloud.google.com/go/cloudsqlconn v1.4.3
@@ -43,6 +45,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/ryanuber/go-glob v1.0.0
+	github.com/soramitsukhmer-lab/go-ed25519sha3 v0.0.0-20250608130125-3aadb34277ed
 	github.com/stretchr/testify v1.9.0
 	github.com/tink-crypto/tink-go/v2 v2.2.0
 	go.uber.org/atomic v1.9.0
@@ -54,6 +57,7 @@ require (
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.22.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
