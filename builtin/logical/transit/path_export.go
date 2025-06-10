@@ -212,7 +212,14 @@ func getExportKey(policy *keysutil.Policy, key *keysutil.KeyEntry, exportType st
 			}
 			return ecKey, nil
 
-		case keysutil.KeyType_ED25519, keysutil.KeyType_ED25519_SHA3_512:
+		case keysutil.KeyType_ED25519:
+			if len(key.Key) == 0 {
+				return "", nil
+			}
+
+			return strings.TrimSpace(base64.StdEncoding.EncodeToString(key.Key)), nil
+
+		case keysutil.KeyType_ED25519_SHA3_512:
 			if len(key.Key) == 0 {
 				return "", nil
 			}
@@ -244,7 +251,10 @@ func getExportKey(policy *keysutil.Policy, key *keysutil.KeyEntry, exportType st
 			}
 			return ecKey, nil
 
-		case keysutil.KeyType_ED25519, keysutil.KeyType_ED25519_SHA3_512:
+		case keysutil.KeyType_ED25519:
+			return strings.TrimSpace(key.FormattedPublicKey), nil
+
+		case keysutil.KeyType_ED25519_SHA3_512:
 			return strings.TrimSpace(key.FormattedPublicKey), nil
 
 		case keysutil.KeyType_RSA2048, keysutil.KeyType_RSA3072, keysutil.KeyType_RSA4096:

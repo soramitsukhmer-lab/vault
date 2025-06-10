@@ -2643,7 +2643,11 @@ func (p *Policy) ValidateLeafCertKeyMatch(keyVersion int, certPublicKeyAlgorithm
 		if certPublicKeyAlgorithm == x509.ECDSA {
 			keyTypeMatches = true
 		}
-	case KeyType_ED25519, KeyType_ED25519_SHA3_512:
+	case KeyType_ED25519:
+		if certPublicKeyAlgorithm == x509.Ed25519 {
+			keyTypeMatches = true
+		}
+	case KeyType_ED25519_SHA3_512:
 		if certPublicKeyAlgorithm == x509.Ed25519 {
 			keyTypeMatches = true
 		}
