@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/keysutil"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/soramitsukhmer-lab/go-ed25519sha3/ed25519sha3"
 )
 
 func (b *backend) pathBYOKExportKeys() *framework.Path {
@@ -184,6 +185,8 @@ func getBYOKExportKey(dstP *keysutil.Policy, srcP *keysutil.Policy, key *keysuti
 		}
 	case keysutil.KeyType_ED25519:
 		targetKey = ed25519.PrivateKey(key.Key)
+	case keysutil.KeyType_ED25519_SHA3_512:
+		targetKey = ed25519sha3.PrivateKey(key.Key)
 	default:
 		return "", fmt.Errorf("unable to export to unknown key type: %v", srcP.Type)
 	}
