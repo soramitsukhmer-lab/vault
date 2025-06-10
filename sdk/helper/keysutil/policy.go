@@ -60,7 +60,6 @@ const (
 	KeyType_AES256_GCM96 = iota
 	KeyType_ECDSA_P256
 	KeyType_ED25519
-	KeyType_ED25519_SHA3_512
 	KeyType_RSA2048
 	KeyType_RSA4096
 	KeyType_ChaCha20_Poly1305
@@ -73,6 +72,12 @@ const (
 	KeyType_AES128_CMAC
 	KeyType_AES256_CMAC
 	// If adding to this list please update allTestKeyTypes in policy_test.go
+)
+
+// Extra variations of ED25519 key type.
+// Instead of adding to the list above, we use a separate block for compatibility
+const (
+	KeyType_ED25519_SHA3_512 = iota + 100
 )
 
 const (
