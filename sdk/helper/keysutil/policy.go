@@ -62,7 +62,6 @@ const (
 	KeyType_AES256_GCM96 = iota
 	KeyType_ECDSA_P256
 	KeyType_ED25519
-	KeyType_ED25519_SHA3_512
 	KeyType_RSA2048
 	KeyType_RSA4096
 	KeyType_ChaCha20_Poly1305
@@ -78,6 +77,12 @@ const (
 	KeyType_HYBRID
 	KeyType_AES192_CMAC
 	// If adding to this list please update allTestKeyTypes in policy_test.go
+)
+
+// Extra variations of ED25519 key type.
+// Instead of adding to the list above, we use a separate block for compatibility
+const (
+	KeyType_ED25519_SHA3_512 = iota + 100
 )
 
 const (
@@ -1742,6 +1747,10 @@ func (p *Policy) ImportPublicOrPrivate(ctx context.Context, storage logical.Stor
 		return fmt.Errorf("unable to import only public key for derived Ed25519 key: imported key should not be an Ed25519 key pair but is instead an HKDF key")
 	}
 
+	if p.Type == KeyType_ED25519_SHA3_512 && p.Derived && !isPrivateKey {
+		return fmt.Errorf("unable to import only public key for derived Ed25519-sha3-512 key: imported key should not be an Ed25519-sha3-512 key pair but is instead an HKDF key")
+	}
+
 	if ((p.Type == KeyType_AES128_GCM96 || p.Type == KeyType_AES128_CMAC) && len(key) != 16) ||
 		((p.Type == KeyType_AES256_GCM96 || p.Type == KeyType_ChaCha20_Poly1305 || p.Type == KeyType_AES256_CMAC) && len(key) != 32) ||
 		(p.Type == KeyType_AES192_CMAC && len(key) != 24) ||
@@ -2583,6 +2592,20 @@ func (ke *KeyEntry) parseFromKey(PolKeyType KeyType, parsedKey any) error {
 			publicKey := parsedKey.(ed25519.PublicKey)
 			ke.FormattedPublicKey = base64.StdEncoding.EncodeToString(publicKey)
 		}
+	case ed25519sha3.PrivateKey, ed25519sha3.PublicKey:
+		if PolKeyType != KeyType_ED25519_SHA3_512 {
+			return fmt.Errorf("invalid key type: expected %s, got %T", PolKeyType, parsedKey)
+		}
+
+		privateKey, ok := parsedKey.(ed25519sha3.PrivateKey)
+		if ok {
+			ke.Key = privateKey
+			publicKey := privateKey.Public().(ed25519sha3.PublicKey)
+			ke.FormattedPublicKey = base64.StdEncoding.EncodeToString(publicKey)
+		} else {
+			publicKey := parsedKey.(ed25519sha3.PublicKey)
+			ke.FormattedPublicKey = base64.StdEncoding.EncodeToString(publicKey)
+		}
 	case *rsa.PrivateKey, *rsa.PublicKey:
 		if PolKeyType != KeyType_RSA2048 && PolKeyType != KeyType_RSA3072 && PolKeyType != KeyType_RSA4096 {
 			return fmt.Errorf("invalid key type: expected %s, got %T", PolKeyType, parsedKey)
@@ -2746,6 +2769,12 @@ func (p *Policy) CreateCsr(keyVersion int, csrTemplate *x509.CertificateRequest)
 		}
 		key = ed25519.PrivateKey(keyEntry.Key)
 
+	case KeyType_ED25519_SHA3_512:
+		if p.Derived {
+			return nil, errutil.UserError{Err: "operation not supported on keys with derivation enabled"}
+		}
+		key = ed25519sha3.PrivateKey(keyEntry.Key)
+
 	case KeyType_RSA2048, KeyType_RSA3072, KeyType_RSA4096:
 		key = keyEntry.RSAKey
 
@@ -2777,6 +2806,10 @@ func (p *Policy) ValidateLeafCertKeyMatch(keyVersion int, certPublicKeyAlgorithm
 			keyTypeMatches = true
 		}
 	case KeyType_ED25519:
+		if certPublicKeyAlgorithm == x509.Ed25519 {
+			keyTypeMatches = true
+		}
+	case KeyType_ED25519_SHA3_512:
 		if certPublicKeyAlgorithm == x509.Ed25519 {
 			keyTypeMatches = true
 		}
