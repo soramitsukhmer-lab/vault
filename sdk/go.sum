@@ -389,6 +389,8 @@ github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/soramitsukhmer-lab/go-ed25519sha3 v0.0.0-20250609161754-63d942243026 h1:lxPna/yI+2b9cmvClYCIczAP2K/crodF0hXVdG6MnHc=
 github.com/soramitsukhmer-lab/go-ed25519sha3 v0.0.0-20250609161754-63d942243026/go.mod h1:kabmqbzvGynhxDa/3wpYyPUfjyw4aYOOstVnditbxU4=
+github.com/soramitsukhmer-lab/go-ed25519sha3 v0.1.0-rc.1 h1:xvYTDyq3UzYniGm/8HkTGe+JNelDoKkHHd+04oHarm0=
+github.com/soramitsukhmer-lab/go-ed25519sha3 v0.1.0-rc.1/go.mod h1:kabmqbzvGynhxDa/3wpYyPUfjyw4aYOOstVnditbxU4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.2.0/go.mod h1:qt09Ya8vawLte6SNmTgCsAVtYtaKzEcn8ATUoHMkEqE=

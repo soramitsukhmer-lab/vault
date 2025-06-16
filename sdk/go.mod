@@ -45,7 +45,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/ryanuber/go-glob v1.0.0
-	github.com/soramitsukhmer-lab/go-ed25519sha3 v0.0.0-20250609161754-63d942243026
+	github.com/soramitsukhmer-lab/go-ed25519sha3 v0.1.0-rc.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tink-crypto/tink-go/v2 v2.2.0
 	go.uber.org/atomic v1.9.0
